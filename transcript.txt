@@ -1,0 +1,14 @@
+Alice:  Good morning,
+Alice:  james; before we start the week I wanted to quickly review where things stand with the client dashboard update.
+James:  Sure,
+James:  Sarah.
+James:  The development work is about eighty per cent done.
+James:  The main challenge right now is the integration with the analytics a p i It's taking longer than expected.
+Alice:  Got it.
+Alice:  Do you need support with the integration or should we adjust the timeline slightly?
+James:  A small time line adjustment would help.
+James:  I expect we can finish everything by Wednesday if the api issues are resolved today.
+Alice:  Perfect.
+Alice:  Let's move the internal review to Thursday then.
+Alice:  Thanks for the update,
+Alice:  james.
