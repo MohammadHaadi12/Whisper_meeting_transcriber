@@ -31,11 +31,11 @@ def save_meeting(title: str, transcript: str):
     conn.close()
 
 
-def load_meeting_transcript(meeting_id: int) -> str:
+def load_meeting_transcript(title: str) -> str:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT transcript FROM meetings WHERE id = ?", (meeting_id,))
+    cursor.execute("SELECT transcript FROM meetings WHERE title = ?", (title,))
     row = cursor.fetchone()
 
     conn.close()

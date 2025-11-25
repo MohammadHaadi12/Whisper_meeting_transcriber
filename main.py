@@ -1,9 +1,10 @@
 from typing import Dict, List
 from langchain_ollama import OllamaLLM
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate , ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda
 from langchain_core.output_parsers import PydanticOutputParser
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from langchain.memory import ConversationBufferWindowMemory
 import os
 from db import init_db, save_meeting, load_meeting_transcript
 
@@ -15,6 +16,9 @@ class MeetingOutput(BaseModel):
     summary: str
     decisions: List[Dict]        
     action_items: List[Dict]
+
+class ChatResponse(BaseModel):
+    answer: str = Field(description="Short answer to the question")
 
 # Initialize Ollama LLM (Phi-3 Mini)
 llm = OllamaLLM(model="phi3")
@@ -90,7 +94,64 @@ save_meeting(output.title, transcript_text)
 print("Meeting is saved to the database")
 
 
+print("loading the meeting transcript from the database .....")
 
+
+transcript = load_meeting_transcript(output.title)
+
+parser_chat = PydanticOutputParser(pydantic_object=ChatResponse)
+
+prompt_chat = ChatPromptTemplate.from_messages([
+    ("system", 
+    """You are an intelligent meeting Q&A assistant.
+Use ONLY the meeting transcript below to answer.
+
+Transcript:
+{context}
+
+Conversation history:
+{history}
+
+Your answer MUST follow this format ,  Always answer in a string format dont include any brackets:
+{format_ins}
+"""),
+    ("user", "Question: {question}")
+]).partial(format_ins=parser_chat.get_format_instructions())
+
+
+# --------- Memory (last 3 turns) ----------
+memory = ConversationBufferWindowMemory(k=3, return_messages=True)
+
+
+# --------- Context function for chain ----------
+def get_context(inputs):
+    history = memory.load_memory_variables({})
+    return {
+        "history": history["history"],
+        "question": inputs["question"],
+        "context": transcript   
+    }
+
+
+# --------- Full QnA Chain ----------
+chain_chat = RunnableLambda(get_context) | prompt_chat | llm | parser_chat
+
+
+# --------- Loop ----------
+while True:
+    question = input("\nAsk your question: ")
+
+    if question.lower() == "bye":
+        break
+
+    response = chain_chat.invoke({"question": question})
+    print("\nAnswer:", response.answer)
+
+    # store conversation memory
+    memory.save_context(
+        {"question": question},
+        {"output": response.answer}
+    )
 
 
 
